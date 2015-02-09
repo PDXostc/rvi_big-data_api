@@ -1,3 +1,7 @@
+/**
+ * Copyright 2015, ATS Advanced Telematic Systems GmbH
+ * All Rights Reserved
+ */
 import play.api._
 import play.api.libs.concurrent.Akka
 

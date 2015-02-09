@@ -1,3 +1,7 @@
+/**
+ * Copyright 2015, ATS Advanced Telematic Systems GmbH
+ * All Rights Reserved
+ */
 import org.specs2.mutable._
 import org.specs2.runner._
 import org.junit.runner._
