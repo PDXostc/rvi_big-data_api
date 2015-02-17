@@ -1,3 +1,7 @@
+/**
+ * Copyright 2015, ATS Advanced Telematic Systems GmbH
+ * All Rights Reserved
+ */
 import controllers.NodeKernel
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.streaming.{Milliseconds, StreamingContext}
