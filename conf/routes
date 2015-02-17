@@ -7,5 +7,9 @@ GET     /                           controllers.Application.index
 
 GET     /ws                         controllers.Application.websocket
 
+GET     /fleet/position             controllers.Application.fleetPosition(time: Long)
+
+GET     /fleet/oldest               controllers.Application.oldestEntryDate
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
