@@ -13,8 +13,7 @@ class NodeKernel(ssc: StreamingContext) extends Actor with ActorLogging {
   val queryProcessor = context.actorOf( QueryProcessorActor.props( ssc ), "query-processor" )
 
   override def receive: Receive = {
-    case m : GetFleetPosition =>
-      log.info( "Fleet position requested" )
+    case m =>
       queryProcessor.forward(m)
   }
 

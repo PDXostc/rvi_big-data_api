@@ -8,7 +8,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.routing.{Listen, Deafen}
 import java.io.File
 import akka.util.Timeout
-import controllers.QueryProcessorActor.{GetOldestEntryDate, TraceByTime, GetFleetPosition}
+import controllers.QueryProcessorActor.{GetOldestEntryDate, TraceByTime, GetFleetPosition, GetPickupsDropoffs, PickupDropoff}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.concurrent.Akka
@@ -55,7 +55,7 @@ object Application extends Controller {
     WsHandlerActor.props( out )
   }
 
-  implicit val reqTimeout: Timeout = 3.seconds
+  implicit val reqTimeout: Timeout = 53.seconds
 
   val TraceWrite = Writes[TraceByTime] { trace =>
     Json.obj(
@@ -84,6 +84,13 @@ object Application extends Controller {
     val dateTime = new DateTime(time)
     (kernel ? GetFleetPosition( dateTime ))
       .mapTo[Seq[TraceByTime]].map( traces => Ok( Json.toJson( traces )  ).withHeaders( "Access-Control-Allow-Origin" -> "*" ) )
+  }
+
+  def pickups(dateFrom: Long, dateTo: Long, hourFrom: Int, hourTo: Int) = Action.async {
+    (kernel ? GetPickupsDropoffs( new DateTime(dateFrom), new DateTime(dateTo), hourFrom, hourTo ))
+      .mapTo[Seq[PickupDropoff]]
+      .map( _.map( x => Array(x.lat, x.lng)) )
+      .map( xs => Ok( Json.toJson( xs ) ).withHeaders( "Access-Control-Allow-Origin" -> "*" )  )
   }
 
   def index = Action {

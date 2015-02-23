@@ -1,6 +1,6 @@
 name := """data-api"""
 
-version := "0.0.1"
+version := "0.1.0"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
@@ -27,3 +27,9 @@ enablePlugins(DockerPlugin)
 dockerBaseImage := "dockerfile/java:oracle-java8"
 
 dockerExposedPorts in Docker := Seq(9000)
+
+dockerRepository in Docker := Some("advancedtelematic")
+
+packageName in Docker := "rvi_data_api"
+
+dockerUpdateLatest in Docker := true
