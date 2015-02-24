@@ -9,7 +9,7 @@ import akka.routing.{Listen, Deafen}
 import java.io.File
 import akka.util.Timeout
 import controllers.QueryProcessorActor.{GetOldestEntryDate, TraceByTime, GetFleetPosition, GetPickupsDropoffs, PickupDropoff}
-import org.joda.time.DateTime
+import org.joda.time.{DateTimeZone, DateTime}
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.concurrent.Akka
 import play.api.mvc._
@@ -75,19 +75,25 @@ object Application extends Controller {
     )
   }
 
+  val PacificTZ = DateTimeZone.forID( "US/Pacific" )
+
+  def dateTime( time : Long ) =
+    new DateTime(time).withZoneRetainFields( PacificTZ ).withZone( DateTimeZone.UTC )
+
+
   import akka.pattern.ask
   def oldestEntryDate = Action.async {
     (kernel ? GetOldestEntryDate).mapTo[DateTime].map( d => Ok(d.toString))
   }
 
   def fleetPosition(time: Long) = Action.async {
-    val dateTime = new DateTime(time)
-    (kernel ? GetFleetPosition( dateTime ))
+    val dt = dateTime( time )
+    (kernel ? GetFleetPosition( dt ))
       .mapTo[Seq[TraceByTime]].map( traces => Ok( Json.toJson( traces )  ).withHeaders( "Access-Control-Allow-Origin" -> "*" ) )
   }
 
   def pickups(dateFrom: Long, dateTo: Long, hourFrom: Int, hourTo: Int) = Action.async {
-    (kernel ? GetPickupsDropoffs( new DateTime(dateFrom), new DateTime(dateTo), hourFrom, hourTo ))
+    (kernel ? GetPickupsDropoffs( dateTime(dateFrom), dateTime(dateTo), hourFrom, hourTo ))
       .mapTo[Seq[PickupDropoff]]
       .map( _.map( x => Array(x.lat, x.lng)) )
       .map( xs => Ok( Json.toJson( xs ) ).withHeaders( "Access-Control-Allow-Origin" -> "*" )  )
