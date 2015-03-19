@@ -8,10 +8,8 @@ import akka.actor.Props
 import akka.actor.{Actor, ActorLogging}
 import java.util.Properties
 import java.util.UUID
-import kafka.consumer.Consumer
-import kafka.consumer.ConsumerConfig
-import kafka.consumer.KafkaStream
-import kafka.consumer.Whitelist
+import kafka.consumer._
+import kafka.serialization.TraceEntryAvroDecoder
 import kafka.serializer.DefaultDecoder
 import kafka.serializer.StringDecoder
 import org.joda.time.DateTime
@@ -36,30 +34,22 @@ class KafkaConsumerActor(zookeeperConnect: String, topic: String, startFromBeggi
   val connector = Consumer.create(config)
 
   val filterSpec = new Whitelist(topic)
-  val iterator = connector.createMessageStreamsByFilter(filterSpec, 1, new StringDecoder(), new StringDecoder())(0).iterator()
+  val iterator = connector.createMessageStreamsByFilter(filterSpec, 1, new StringDecoder(), new TraceEntryAvroDecoder())(0).iterator()
 
   self ! KafkaConsumerActor.Next
-
-  def parse(str: String) : TraceEntry = {
-    val fields = str.split(" ")
-    TraceEntry(
-      id = fields(0),
-      timestamp = new DateTime( fields(4).toLong * 1000 ),
-      lat = BigDecimal( fields(1) ),
-      long = BigDecimal( fields(2) ),
-      isOccupied = fields(3) == "1"
-    )
-  }
+  log.info( "Kafka consumer started" )
 
   def dispatch : Receive = {
     case KafkaConsumerActor.Next  =>
-      Try(
+      try {
         if( iterator.hasNext() ) {
           val msg = iterator.next().message()
           log.debug( "Message from kafka: " + msg )
-          gossip( parse(msg) )
+          gossip( msg )
         }
-      ) // Try is needet because hasNext can throw a ConsumerTimeoutException is topic is empty
+      } catch {
+        case e: ConsumerTimeoutException => log.debug( e.getMessage )
+      }
       self ! KafkaConsumerActor.Next
         
   }

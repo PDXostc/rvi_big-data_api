@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "TraceEntryRecord",
+  "namespace": "kafka",
+  "fields": [ {
+    "name": "id",
+    "type": "string"
+  }, {
+    "name": "timestamp",
+    "type": "long",
+    "doc": "The content of the user's Twitter message"
+  }, {
+    "name": "lat",
+    "type": "double"
+  }, {
+    "name": "lng",
+    "type": "double"
+  }, {
+    "name": "is_occupied",
+    "type": "boolean"
+  }, {
+    "name": "speed",
+    "type": "double"
+  } ],
+  "doc": "A basic schema for trace entry enriched with speed"
+}

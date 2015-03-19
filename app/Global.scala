@@ -3,6 +3,7 @@
  * All Rights Reserved
  */
 import controllers.NodeKernel
+import kafka.PreprocessingStream
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.streaming.{Milliseconds, StreamingContext}
 import play.api._
@@ -15,10 +16,10 @@ object Global extends GlobalSettings {
   override def onStart(app: Application) {
     val zookeeper = app.configuration.getString("zookeeper.connect").getOrElse("localhost:2181")
     val akka = Akka.system(app)
-    akka.actorOf(kafka.KafkaConsumerActor.props(zookeeper, "gps_trace", false).withDispatcher("kafka-dispatcher"), "kafka-consumer")
     val ssc = startSpark( app.configuration )
     sparkStreaming = Some( ssc )
-    akka.actorOf(NodeKernel.props(ssc), "kernel")
+    akka.actorOf(NodeKernel.props(ssc, zookeeper), "kernel")
+    PreprocessingStream.start( ssc, zookeeper, app.configuration.getString("kafka.broker").get :: Nil )
   }
 
   private def startSpark(configuration: Configuration): StreamingContext = {
@@ -30,7 +31,9 @@ object Global extends GlobalSettings {
     val sc = new SparkContext(conf)
 
     /** Creates the Spark Streaming context. */
-    new StreamingContext(sc, Milliseconds(500))
+    val ssc = new StreamingContext(sc, Milliseconds(500) )
+    ssc.checkpoint( "/tmp" )
+    ssc
   }
 
   override def onStop(app: Application) = {

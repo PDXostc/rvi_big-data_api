@@ -17,7 +17,7 @@ import play.api.Play.current
 import scala.concurrent.duration.Duration
 import scala.util.Try
 import concurrent.duration._
-import kafka.TraceEntry
+import kafka.{TraceWithSpeed, TraceEntry}
 
 object WsHandlerActor {
   def props( out : ActorRef ) : Props = Props( classOf[WsHandlerActor], out )
@@ -26,16 +26,33 @@ object WsHandlerActor {
 class WsHandlerActor(out: ActorRef) extends Actor with ActorLogging {
   import concurrent.duration._
 
-  val feed = context.actorSelection("/user/kafka-consumer")
+  val feed = context.actorSelection("/user/kernel/kafka-consumer")
 
   override def preStart() = feed ! Listen(self)
 
-  override def receive: Receive = {
-    case msg: String =>
-      out ! "Got it" + msg
-    case entry: TraceEntry =>
-      out ! s"""{:id ${entry.id} :lat ${entry.lat} :lng ${entry.long} :occupied ${entry.isOccupied}}"""
+  import play.api.libs.json._
+
+  case class SpeedFilter(min: BigDecimal, max: BigDecimal) {
+    def check( speed: BigDecimal ) : Boolean = speed >= min && speed <= max
   }
+
+  object SpeedFilter {
+    val default = SpeedFilter( BigDecimal(0), BigDecimal(250) )
+  }
+  implicit val speedFilterReads = Json.reads[SpeedFilter]
+
+  def streaming(speedFilter: SpeedFilter) : Receive = {
+    case msg: String =>
+      Json.parse( msg ).validate[SpeedFilter] match {
+        case JsSuccess(filter, _) => context become streaming( filter )
+        case error : JsError => log.error( s"Invalid message: $msg. Error: " + Json.stringify( JsError.toFlatJson(error) ) )
+      }
+    case TraceWithSpeed(entry, speed) =>
+      if( speedFilter.check( speed ) )
+        out ! s"""{:id ${entry.id} :lat ${entry.lat} :lng ${entry.long} :occupied ${entry.isOccupied}}"""
+  }
+
+  override def receive: Receive = streaming( SpeedFilter.default )
 
   override def postStop() = {
     log.info( "Socket closed!" )
