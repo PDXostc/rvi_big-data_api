@@ -35,5 +35,3 @@ object serialization {
 }
 
 case class TraceWithSpeed( entry: TraceEntry, speed: BigDecimal )
-
-case class GpsPos( lat: BigDecimal, lng: BigDecimal )

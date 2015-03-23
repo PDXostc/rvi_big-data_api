@@ -6,12 +6,12 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 scalaVersion := "2.10.5"
 
-val SparkVersion = "1.3.0"
+val SparkVersion = "1.2.1"
 
 val bijectionVersion = "0.7.1"
 
 val spark = Seq(
-  "com.datastax.spark"  %% "spark-cassandra-connector"  % "1.2.0-alpha3",
+  "com.datastax.spark"  %% "spark-cassandra-connector"  % "1.2.0-rc1",
   "org.apache.spark"    %% "spark-streaming-kafka"      % SparkVersion exclude("com.google.guava", "guava") exclude("org.apache.spark", "spark-core") exclude("org.apache.kafka", "kafka"),
   "org.apache.spark" %% "spark-core" % SparkVersion,
   "org.apache.spark" %% "spark-streaming" % SparkVersion

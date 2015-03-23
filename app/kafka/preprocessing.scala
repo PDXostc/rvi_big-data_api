@@ -12,7 +12,7 @@ import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.joda.time.DateTime
 import spire.algebra.Trig
-
+import geometry.GpsPos
 
 object KafkaSink {
   import collection.JavaConversions._
@@ -95,13 +95,11 @@ object PreprocessingStream {
     import serialization.{EntryToRecord, TraceEntryAvroDecoder}
 
 
-    val kafkaParams = Map("group.id" -> UUID.randomUUID().toString(),
-      "metadata.broker.list" -> brokerList.mkString(","),
-      "zookeeper.connect" -> zookeeperConnect,
+    val kafkaParams = Map("group.id" -> UUID.randomUUID().toString(), "zookeeper.connect" -> zookeeperConnect,
       "consumer.timeout.ms" -> "1000")
 
-    val inputStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](
-      ssc, kafkaParams, Set("gps_trace"))
+    val inputStream = KafkaUtils.createStream[String, String, StringDecoder, StringDecoder](
+      ssc, kafkaParams, Map("gps_trace" -> 1), StorageLevel.MEMORY_ONLY)
 
     val props = new java.util.Properties()
     props.put("metadata.broker.list", brokerList.mkString(","))

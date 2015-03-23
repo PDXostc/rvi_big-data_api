@@ -7,9 +7,9 @@ GET     /                           controllers.Application.index
 
 GET     /ws                         controllers.Application.websocket
 
-GET     /fleet/position             controllers.Application.fleetPosition(time: Long)
+GET     /fleet/position             controllers.Application.fleetPosition(time: Long, area: List[String])
 
-GET     /pickups                    controllers.Application.pickups(dateFrom: Long, dateTo: Long, hourFrom: Int, hourTo: Int)
+GET     /pickups                    controllers.Application.pickups(dateFrom: Long, dateTo: Long, hourFrom: Int, hourTo: Int, area: List[String])
 
 GET     /fleet/oldest               controllers.Application.oldestEntryDate
 
