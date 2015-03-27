@@ -8,14 +8,40 @@ import akka.actor.Props
 import akka.actor.{Actor, ActorLogging}
 import java.util.Properties
 import java.util.UUID
+import geometry.GpsPos
 import kafka.consumer._
 import kafka.serialization.TraceEntryAvroDecoder
 import kafka.serializer.DefaultDecoder
 import kafka.serializer.StringDecoder
 import org.joda.time.DateTime
+import play.api.libs.json.{Json, JsValue}
 import scala.util.Try
 
-case class TraceEntry(id: String, timestamp: DateTime, lat: BigDecimal, long: BigDecimal, isOccupied: Boolean)
+case class TraceEntry(id: String, timestamp: DateTime, lat: BigDecimal, lng: BigDecimal, isOccupied: Boolean)
+
+object TraceEntry {
+
+  private[this] case class DataChannel(channel: String, value: JsValue)
+  private[this] implicit val DataChannelReads = Json.reads[DataChannel]
+
+  import play.api.libs.json._
+  import play.api.libs.json.Reads._
+  import play.api.libs.functional.syntax._
+
+  private implicit val GpsPosReads = ((__ \ "lat").read[BigDecimal] and (__ \ "lon").read[BigDecimal])(GpsPos.apply _)
+
+  implicit val TraceEntryReads = new Reads[TraceEntry] {
+    override def reads(json: JsValue): JsResult[TraceEntry] = {
+      for {
+        id <- (json \ "vin").validate[String]
+        timestamp <- (json \ "timestamp").validate[DateTime]
+        data <- (json \ "data").validate[List[DataChannel]]
+        GpsPos(lat, lng) <- data.find( _.channel == "location" ).map( _.value.validate[GpsPos] ).getOrElse( JsError("No location found.") )
+        occupancy <- data.find( _.channel == "occupancy" ).map( _.value.validate[Int].map( _ == 1 ) ).getOrElse( JsError("No occupacy found") )
+      } yield TraceEntry(id, timestamp, lat, lng, occupancy)
+    }
+  }
+}
 
 object KafkaConsumerActor {
   object Next

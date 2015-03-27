@@ -18,7 +18,7 @@ object serialization {
       .setId(e.entry.id)
       .setTimestamp(e.entry.timestamp.getMillis)
       .setLat(e.entry.lat.doubleValue())
-      .setLng(e.entry.long.doubleValue())
+      .setLng(e.entry.lng.doubleValue())
       .setIsOccupied(e.entry.isOccupied)
       .setSpeed(e.speed.doubleValue())
       .build()
@@ -26,7 +26,7 @@ object serialization {
     TraceWithSpeed(entry = TraceEntry(
       id = r.getId,
       timestamp = new DateTime(r.getTimestamp),
-      long = BigDecimal(r.getLng),
+      lng = BigDecimal(r.getLng),
       lat = BigDecimal(r.getLat),
       isOccupied = r.getIsOccupied
     ), speed = BigDecimal(r.getSpeed))

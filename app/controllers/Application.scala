@@ -64,8 +64,8 @@ class WsHandlerActor(out: ActorRef) extends Actor with ActorLogging {
         case error : JsError => log.warning( s"$msg is not area filter. Error: " + Json.stringify( JsError.toFlatJson(error) ) )
       }
     case TraceWithSpeed(entry, speed) =>
-      if( speedFilter.check( speed ) && areaFilter.check( GpsPos(entry.lat, entry.long) ))
-        out ! s"""{:id ${entry.id} :lat ${entry.lat} :lng ${entry.long} :occupied ${entry.isOccupied}}"""
+      if( speedFilter.check( speed ) && areaFilter.check( GpsPos(entry.lat, entry.lng) ))
+        out ! s"""{:id ${entry.id} :lat ${entry.lat} :lng ${entry.lng} :occupied ${entry.isOccupied}}"""
   }
 
   override def receive: Receive = streaming( SpeedFilter.default, AreaFilter.default )
