@@ -45,6 +45,6 @@ seq(sbtavro.SbtAvro.avroSettings : _*)
 // Configure the desired Avro version.  sbt-avro automatically injects a libraryDependency.
 (version in avroConfig) := "1.7.6"
 
-(sourceDirectory in avroConfig) <<= (baseDirectory in Compile)(_ / "avro")
+(sourceDirectory in avroConfig) <<= (baseDirectory in Compile)(_ / "public")
 
 (stringType in avroConfig) := "String"
