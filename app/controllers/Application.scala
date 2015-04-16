@@ -5,27 +5,21 @@
 package controllers
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.routing.{Listen, Deafen}
-import java.io.File
+import akka.routing.{Deafen, Listen}
 import akka.util.Timeout
-import controllers.QueryProcessorActor.{GetOldestEntryDate, TraceByTime, GetFleetPosition, GetPickupsDropoffs, PickupDropoff}
-import org.joda.time.{DateTimeZone, DateTime}
-import org.joda.time.format.DateTimeFormat
+import controllers.QueryProcessorActor.{GetFleetPosition, GetOldestEntryDate, GetPickupsDropoffs, PickupDropoff, TraceByTime}
+import geometry.{GpsPos, Polygon}
+import kafka.TraceEntry
+import org.joda.time.{DateTime, DateTimeZone}
+import play.api.Play.current
 import play.api.libs.concurrent.Akka
 import play.api.mvc._
-import play.api.Play.current
-import scala.concurrent.duration.Duration
-import scala.util.Try
-import concurrent.duration._
-import geometry.{Polygon, GpsPos}
-import kafka.{TraceWithSpeed, TraceEntry}
 
 object WsHandlerActor {
   def props( out : ActorRef ) : Props = Props( classOf[WsHandlerActor], out )
 }
 
 class WsHandlerActor(out: ActorRef) extends Actor with ActorLogging {
-  import concurrent.duration._
 
   val feed = context.actorSelection("/user/kernel/kafka-consumer")
 
@@ -63,8 +57,8 @@ class WsHandlerActor(out: ActorRef) extends Actor with ActorLogging {
         case JsSuccess(filter, _) => context become streaming( speedFilter, AreaFilter(filter.toVector) )
         case error : JsError => log.warning( s"$msg is not area filter. Error: " + Json.stringify( JsError.toFlatJson(error) ) )
       }
-    case TraceWithSpeed(entry, speed) =>
-      if( speedFilter.check( speed ) && areaFilter.check( GpsPos(entry.lat, entry.lng) ))
+    case entry : TraceEntry =>
+      if( speedFilter.check( entry.speed ) && areaFilter.check( GpsPos(entry.lat, entry.lng) ))
         out ! s"""{:id ${entry.id} :lat ${entry.lat} :lng ${entry.lng} :occupied ${entry.isOccupied}}"""
   }
 
@@ -78,9 +72,10 @@ class WsHandlerActor(out: ActorRef) extends Actor with ActorLogging {
 
 object Application extends Controller {
 
-  import scala.concurrent.duration._
-  import play.api.libs.json._
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
+  import play.api.libs.json._
+
+  import scala.concurrent.duration._
 
   val kernel = Akka.system.actorSelection("/user/kernel")
 

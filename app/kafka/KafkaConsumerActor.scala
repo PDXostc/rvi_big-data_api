@@ -4,29 +4,26 @@
  */
 package kafka
 
-import akka.actor.Props
-import akka.actor.{Actor, ActorLogging}
-import java.util.Properties
-import java.util.UUID
-import geometry.GpsPos
-import kafka.consumer._
-import kafka.serialization.TraceEntryAvroDecoder
-import kafka.serializer.DefaultDecoder
-import kafka.serializer.StringDecoder
-import org.joda.time.DateTime
-import play.api.libs.json.{Json, JsValue}
-import scala.util.Try
+import java.util.{Properties, UUID}
 
-case class TraceEntry(id: String, timestamp: DateTime, lat: BigDecimal, lng: BigDecimal, isOccupied: Boolean)
+import akka.actor.{Actor, ActorLogging, Props}
+import geometry.GpsPos
+import kafka.TraceEntry.TraceEntryJsonDecoder
+import kafka.consumer._
+import kafka.serializer.{Decoder, StringDecoder}
+import org.joda.time.DateTime
+import play.api.libs.json.{JsValue, Json}
+
+case class TraceEntry(id: String, timestamp: DateTime, lat: BigDecimal, lng: BigDecimal, isOccupied: Boolean, speed : BigDecimal)
 
 object TraceEntry {
 
   private[this] case class DataChannel(channel: String, value: JsValue)
   private[this] implicit val DataChannelReads = Json.reads[DataChannel]
 
-  import play.api.libs.json._
-  import play.api.libs.json.Reads._
   import play.api.libs.functional.syntax._
+  import play.api.libs.json.Reads._
+  import play.api.libs.json._
 
   private implicit val GpsPosReads = ((__ \ "lat").read[BigDecimal] and (__ \ "lon").read[BigDecimal])(GpsPos.apply _)
 
@@ -38,9 +35,16 @@ object TraceEntry {
         data <- (json \ "data").validate[List[DataChannel]]
         GpsPos(lat, lng) <- data.find( _.channel == "location" ).map( _.value.validate[GpsPos] ).getOrElse( JsError("No location found.") )
         occupancy <- data.find( _.channel == "occupancy" ).map( _.value.validate[Int].map( _ == 1 ) ).getOrElse( JsError("No occupacy found") )
-      } yield TraceEntry(id, timestamp, lat, lng, occupancy)
+        speed <- data.find( _.channel == "speed" ).map( _.value.validate[BigDecimal] ).getOrElse( JsError("No speeed found.") )
+      } yield TraceEntry(id, timestamp, lat, lng, occupancy, speed)
     }
   }
+
+  object TraceEntryJsonDecoder extends Decoder[TraceEntry] {
+
+    override def fromBytes(bytes: Array[Byte]): TraceEntry = Json.parse( bytes ).as[TraceEntry]
+  }
+
 }
 
 object KafkaConsumerActor {
@@ -60,7 +64,7 @@ class KafkaConsumerActor(zookeeperConnect: String, topic: String, startFromBeggi
   val connector = Consumer.create(config)
 
   val filterSpec = new Whitelist(topic)
-  val iterator = connector.createMessageStreamsByFilter(filterSpec, 1, new StringDecoder(), new TraceEntryAvroDecoder())(0).iterator()
+  val iterator = connector.createMessageStreamsByFilter(filterSpec, 1, new StringDecoder(), TraceEntryJsonDecoder)(0).iterator()
 
   self ! KafkaConsumerActor.Next
   log.info( "Kafka consumer started" )

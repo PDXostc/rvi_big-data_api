@@ -3,9 +3,8 @@
  * All Rights Reserved
  */
 import controllers.NodeKernel
-import kafka.PreprocessingStream
-import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.streaming.{Milliseconds, StreamingContext}
+import org.apache.spark.{SparkConf, SparkContext}
 import play.api._
 import play.api.libs.concurrent.Akka
 
@@ -19,7 +18,6 @@ object Global extends GlobalSettings {
     val ssc = startSpark( app.configuration )
     sparkStreaming = Some( ssc )
     akka.actorOf(NodeKernel.props(ssc, zookeeper), "kernel")
-    PreprocessingStream.start( ssc, zookeeper, app.configuration.getString("kafka.broker").get :: Nil )
   }
 
   private def startSpark(configuration: Configuration): StreamingContext = {

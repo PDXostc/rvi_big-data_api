@@ -4,27 +4,25 @@ version := "0.3.0"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.10.5"
+scalaVersion := "2.11.6"
 
 val SparkVersion = "1.2.1"
 
-val bijectionVersion = "0.7.1"
+val AkkaVersion = "2.3.9"
+
+val akka = Seq(
+  "com.typesafe.akka"   %% "akka-actor" % AkkaVersion
+)
 
 val spark = Seq(
-  "com.datastax.spark"  %% "spark-cassandra-connector"  % "1.2.0-rc1",
-  "org.apache.spark"    %% "spark-streaming-kafka"      % SparkVersion exclude("com.google.guava", "guava") exclude("org.apache.spark", "spark-core") exclude("org.apache.kafka", "kafka"),
-  "org.apache.spark" %% "spark-core" % SparkVersion,
+  "com.datastax.spark"  %% "spark-cassandra-connector"  % "1.2.0-rc3",
+  "org.apache.spark" %% "spark-core" % SparkVersion exclude("com.google.guava", "guava") exclude( "org.slf4j", "slf4j-log4j12" ),
   "org.apache.spark" %% "spark-streaming" % SparkVersion
 )
 
-val bijection = Seq(
-  "com.twitter" %% "bijection-core" % bijectionVersion,
-  "com.twitter" %% "bijection-avro" % bijectionVersion
-)
-
-libraryDependencies ++= spark ++ bijection ++ Seq(
+libraryDependencies ++= spark ++ Seq(
   "com.github.nscala-time"    %% "nscala-time"    % "1.8.0",
-  "org.apache.kafka"          %% "kafka"          % "0.8.2.1" excludeAll(ExclusionRule("org.slf4j")),
+  "org.apache.kafka"          %% "kafka"          % "0.8.2.1",
   "org.spire-math" %% "spire" % "0.9.0"
 )
 
@@ -39,12 +37,3 @@ dockerRepository in Docker := Some("advancedtelematic")
 packageName in Docker := "rvi_data_api"
 
 dockerUpdateLatest in Docker := true
-
-seq(sbtavro.SbtAvro.avroSettings : _*)
-
-// Configure the desired Avro version.  sbt-avro automatically injects a libraryDependency.
-(version in avroConfig) := "1.7.6"
-
-(sourceDirectory in avroConfig) <<= (baseDirectory in Compile)(_ / "public")
-
-(stringType in avroConfig) := "String"
