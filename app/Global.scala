@@ -1,6 +1,5 @@
 /**
- * Copyright 2015, ATS Advanced Telematic Systems GmbH
- * All Rights Reserved
+ * Copyright (C) 2015, Jaguar Land Rover
  */
 import controllers.NodeKernel
 import org.apache.spark.streaming.{Milliseconds, StreamingContext}
