@@ -1,4 +1,2 @@
-This is your new Play application
-=================================
-
-This file will be packaged with your application, when using `activator dist`.
+Documentation on using this project can be found
+[here](https://github.com/advancedtelematic/rvi_big_data-docker).
